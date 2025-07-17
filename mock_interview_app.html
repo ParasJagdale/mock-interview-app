@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Mock Interview Simulator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .step {
+            display: none;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        .step h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            background: #f8f9ff;
+            border-color: #5a67d8;
+        }
+
+        .upload-area.dragover {
+            background: #e6f3ff;
+            border-color: #2d3748;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .file-info {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .question-card {
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .question-number {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .answer-area {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        .answer-area:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .feedback {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .feedback.show {
+            display: block;
+        }
+
+        .feedback.positive {
+            background: #f0fff4;
+            border-left: 4px solid #38a169;
+            color: #2d3748;
+        }
+
+        .feedback.negative {
+            background: #fff5f5;
+            border-left: 4px solid #e53e3e;
+            color: #2d3748;
+        }
+
+        .feedback.neutral {
+            background: #f7fafc;
+            border-left: 4px solid #4a5568;
+            color: #2d3748;
+        }
+
+        .progress-bar {
+            background: #e2e8f0;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .interview-summary {
+            text-align: center;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(#667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            color: white;
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #4a5568;
+            margin-top: 5px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .auth-container {
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .auth-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .auth-title {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .auth-subtitle {
+            color: #4a5568;
+            margin-bottom: 30px;
+        }
+
+        .google-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #4285f4;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+        }
+
+        .google-btn:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 133, 244, 0.4);
+        }
+
+        .google-btn svg {
+            margin-right: 10px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            border-radius: 25px;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 15px;
+            border: 2px solid white;
+        }
+
+        .user-name {
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #a0aec0;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .auth-divider span {
+            padding: 0 15px;
+        }
+
+        .demo-btn {
+            background: #e2e8f0;
+            color: #4a5568;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .demo-btn:hover {
+            background: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        .user-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+        }
+
+        .stat-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-text {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 AI Mock Interview Simulator</h1>
+            <p>Upload your resume and job description to start your personalized mock interview</p>
+        </div>
+
+        <div class="error" id="errorMessage"></div>
+
+        <!-- Step 1: File Upload -->
+        <div class="card step active" id="uploadStep">
+            <h2>📄 Upload Your Documents</h2>
+            
+            <div class="upload-section">
+                <h3>Resume (PDF)</h3>
+                <div class="upload-area" id="resumeUpload">
+                    <div class="upload-icon">📄</div>
+                    <p>Click to upload or drag and drop your resume</p>
+                    <input type="file" class="file-input" id="resumeFile" accept=".pdf">
+                </div>
+                <div class="file-info" id="resumeInfo"></div>
+            </div>
+
+            <div class="upload-section">
+                <h3>Job Description (Text or PDF)</h3>
+                <div class="upload-area" id="jobUpload">
+                    <div class="upload-icon">📝</div>
+                    <p>Click to upload job description or drag and drop</p>
+                    <input type="file" class="file-input" id="jobFile" accept=".pdf,.txt">
+                </div>
+                <div class="file-info" id="jobInfo"></div>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <p>Or paste job description here:</p>
+                    <textarea id="jobTextInput" placeholder="Paste the job description here..." style="width: 100%; height: 150px; padding: 15px; border: 2px solid #e2e8f0; border-radius: 8px; margin-top: 10px; font-family: inherit;"></textarea>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button class="btn" id="startInterview" onclick="startInterview()">
+                    🚀 Start Mock Interview
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 2: Interview Questions -->
+        <div class="card step" id="interviewStep">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="question-card" id="questionCard">
+                <div class="question-number" id="questionNumber">Question 1 of 8</div>
+                <div class="question-text" id="questionText">Loading your personalized question...</div>
+                <textarea class="answer-area" id="answerArea" placeholder="Type your answer here..."></textarea>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" id="submitAnswer" onclick="submitAnswer()">
+                        ✅ Submit Answer
+                    </button>
+                </div>
+            </div>
+
+            <div class="feedback" id="feedbackArea"></div>
+            
+            <div class="loading" id="loadingArea">
+                <div class="spinner"></div>
+                <p>Analyzing your answer...</p>
+            </div>
+        </div>
+
+        <!-- Step 3: Interview Summary -->
+        <div class="card step" id="summaryStep">
+            <div class="interview-summary">
+                <h2>🎉 Interview Complete!</h2>
+                <div class="score-circle" id="scoreCircle">85%</div>
+                <h3>Overall Performance</h3>
+                
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalQuestions">8</div>
+                        <div class="stat-label">Questions Answered</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgScore">7.2</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="strongAreas">3</div>
+                        <div class="stat-label">Strong Areas</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="improvementAreas">2</div>
+                        <div class="stat-label">Areas to Improve</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <button class="btn" onclick="restartInterview()">
+                        🔄 Start New Interview
+                    </button>
+                    <button class="btn" onclick="downloadResults()">
+                        📊 Download Results
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentStep = 1;
+        let currentQuestion = 0;
+        let questions = [];
+        let answers = [];
+        let resumeText = '';
+        let jobText = '';
+        let interviewScore = 0;
+
+        // Sample questions for demo (in real app, these would come from AI)
+        const sampleQuestions = [
+            {
+                type: 'resume',
+                question: 'Tell me about a challenging project you worked on and how you overcame the obstacles.',
+                category: 'Experience'
+            },
+            {
+                type: 'job',
+                question: 'Why are you interested in this specific role and how does it align with your career goals?',
+                category: 'Motivation'
+            },
+            {
+                type: 'technical',
+                question: 'Explain the difference between synchronous and asynchronous programming.',
+                category: 'Technical'
+            },
+            {
+                type: 'aptitude',
+                question: 'If you have 8 balls and one is heavier than the rest, how would you find it using a balance scale in minimum weighings?',
+                category: 'Logical Reasoning'
+            },
+            {
+                type: 'behavioral',
+                question: 'Describe a situation where you had to work with a difficult team member. How did you handle it?',
+                category: 'Behavioral'
+            },
+            {
+                type: 'technical',
+                question: 'What is the time complexity of searching in a binary search tree?',
+                category: 'Technical'
+            },
+            {
+                type: 'aptitude',
+                question: 'A train leaves Station A at 10 AM traveling at 60 mph. Another train leaves Station B at 11 AM traveling at 80 mph toward Station A. If the stations are 280 miles apart, at what time will they meet?',
+                category: 'Numerical Reasoning'
+            },
+            {
+                type: 'job',
+                question: 'What do you think are the biggest challenges in this industry right now, and how would you address them?',
+                category: 'Industry Knowledge'
+            }
+        ];
+
+        // PDF.js worker setup
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            setupFileUploads();
+            setupDragAndDrop();
+        });
+
+        function setupFileUploads() {
+            const resumeUpload = document.getElementById('resumeUpload');
+            const jobUpload = document.getElementById('jobUpload');
+            const resumeFile = document.getElementById('resumeFile');
+            const jobFile = document.getElementById('jobFile');
+
+            resumeUpload.addEventListener('click', () => resumeFile.click());
+            jobUpload.addEventListener('click', () => jobFile.click());
+
+            resumeFile.addEventListener('change', (e) => handleFileSelect(e, 'resume'));
+            jobFile.addEventListener('change', (e) => handleFileSelect(e, 'job'));
+        }
+
+        function setupDragAndDrop() {
+            const uploadAreas = document.querySelectorAll('.upload-area');
+            
+            uploadAreas.forEach(area => {
+                area.addEventListener('dragover', handleDragOver);
+                area.addEventListener('dragleave', handleDragLeave);
+                area.addEventListener('drop', handleDrop);
+            });
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.target.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.target.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.target.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const type = e.target.id === 'resumeUpload' ? 'resume' : 'job';
+                handleFileSelect({ target: { files: files } }, type);
+            }
+        }
+
+        async function handleFileSelect(e, type) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const infoDiv = document.getElementById(type + 'Info');
+            const errorDiv = document.getElementById('errorMessage');
+            
+            try {
+                infoDiv.innerHTML = `
+                    <p><strong>File:</strong> ${file.name}</p>
+                    <p><strong>Size:</strong> ${(file.size / 1024).toFixed(1)} KB</p>
+                    <p><strong>Status:</strong> Processing...</p>
+                `;
+                infoDiv.classList.add('show');
+                errorDiv.classList.remove('show');
+
+                let text = '';
+                if (file.type === 'application/pdf') {
+                    text = await extractTextFromPDF(file);
+                } else if (file.type === 'text/plain') {
+                    text = await file.text();
+                }
+
+                if (type === 'resume') {
+                    resumeText = text;
+                } else {
+                    jobText = text;
+                }
+
+                infoDiv.innerHTML = `
+                    <p><strong>File:</strong> ${file.name}</p>
+                    <p><strong>Size:</strong> ${(file.size / 1024).toFixed(1)} KB</p>
+                    <p><strong>Status:</strong> ✅ Successfully processed</p>
+                    <p><strong>Text extracted:</strong> ${text.substring(0, 100)}...</p>
+                `;
+
+                checkReadyToStart();
+            } catch (error) {
+                showError('Error processing file: ' + error.message);
+                infoDiv.innerHTML = `
+                    <p><strong>File:</strong> ${file.name}</p>
+                    <p><strong>Status:</strong> ❌ Processing failed</p>
+                `;
+            }
+        }
+
+        async function extractTextFromPDF(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const typedArray = new Uint8Array(e.target.result);
+                        const pdf = await pdfjsLib.getDocument(typedArray).promise;
+                        let fullText = '';
+
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
+                            const pageText = textContent.items.map(item => item.str).join(' ');
+                            fullText += pageText + ' ';
+                        }
+
+                        resolve(fullText.trim());
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Failed to read PDF file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        function checkReadyToStart() {
+            const jobTextInput = document.getElementById('jobTextInput').value;
+            const hasResume = resumeText.length > 0;
+            const hasJob = jobText.length > 0 || jobTextInput.length > 0;
+            
+            const startButton = document.getElementById('startInterview');
+            startButton.disabled = !(hasResume && hasJob);
+            
+            if (!hasJob && jobTextInput.length > 0) {
+                jobText = jobTextInput;
+                document.getElementById('jobInfo').innerHTML = `
+                    <p><strong>Job Description:</strong> Pasted text (${jobTextInput.length} characters)</p>
+                    <p><strong>Status:</strong> ✅ Ready</p>
+                `;
+                document.getElementById('jobInfo').classList.add('show');
+            }
+        }
+
+        // Monitor job description textarea
+        document.getElementById('jobTextInput').addEventListener('input', checkReadyToStart);
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => errorDiv.classList.remove('show'), 5000);
+        }
+
+        async function startInterview() {
+            if (!resumeText || (!jobText && !document.getElementById('jobTextInput').value)) {
+                showError('Please upload both resume and job description');
+                return;
+            }
+
+            if (!jobText) {
+                jobText = document.getElementById('jobTextInput').value;
+            }
+
+            showStep(2);
+            
+            // In a real app, you'd call an AI API here to generate personalized questions
+            questions = await generateQuestions();
+            currentQuestion = 0;
+            answers = [];
+            
+            showQuestion();
+        }
+
+        async function generateQuestions() {
+            // Demo: Use sample questions
+            // In real app, call OpenAI/Claude API here
+            showLoading(true);
+            
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            showLoading(false);
+            return sampleQuestions;
+        }
+
+        function showQuestion() {
+            const questionNumberEl = document.getElementById('questionNumber');
+            const questionTextEl = document.getElementById('questionText');
+            const answerArea = document.getElementById('answerArea');
+            const feedbackArea = document.getElementById('feedbackArea');
+            
+            questionNumberEl.textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+            questionTextEl.textContent = questions[currentQuestion].question;
+            answerArea.value = '';
+            feedbackArea.classList.remove('show');
+            
+            updateProgress();
+        }
+
+        function updateProgress() {
+            const progressFill = document.getElementById('progressFill');
+            const progress = (currentQuestion / questions.length) * 100;
+            progressFill.style.width = progress + '%';
+        }
+
+        async function submitAnswer() {
+            const answer = document.getElementById('answerArea').value;
+            if (!answer.trim()) {
+                showError('Please provide an answer');
+                return;
+            }
+
+            showLoading(true);
+            
+            // Store answer
+            answers.push({
+                question: questions[currentQuestion].question,
+                answer: answer,
+                category: questions[currentQuestion].category
+            });
+
+            // Simulate AI feedback (in real app, call AI API)
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            const feedback = generateFeedback(answer);
+            showFeedback(feedback);
+            
+            showLoading(false);
+            
+            // Move to next question or finish
+            setTimeout(() => {
+                currentQuestion++;
+                if (currentQuestion < questions.length) {
+                    showQuestion();
+                } else {
+                    finishInterview();
+                }
+            }, 3000);
+        }
+
+        function generateFeedback(answer) {
+            // Demo feedback generation
+            const feedbacks = [
+                {
+                    type: 'positive',
+                    message: 'Excellent response! You provided specific examples and demonstrated clear thinking.'
+                },
+                {
+                    type: 'neutral',
+                    message: 'Good answer. Consider adding more specific examples to strengthen your response.'
+                },
+                {
+                    type: 'negative',
+                    message: 'Your answer could be improved. Try to be more specific and provide concrete examples.'
+                }
+            ];
+            
+            return feedbacks[Math.floor(Math.random() * feedbacks.length)];
+        }
+
+        function showFeedback(feedback) {
+            const feedbackArea = document.getElementById('feedbackArea');
+            feedbackArea.className = `feedback show ${feedback.type}`;
+            feedbackArea.innerHTML = `
+                <h4>Feedback:</h4>
+                <p>${feedback.message}</p>
+            `;
+        }
+
+        function finishInterview() {
+            calculateScore();
+            showStep(3);
+        }
+
+        function calculateScore() {
+            // Demo scoring
+            const totalQuestions = questions.length;
+            const avgScore = 7.2;
+            const overallScore = 85;
+            
+            document.getElementById('scoreCircle').textContent = overallScore + '%';
+            document.getElementById('totalQuestions').textContent = totalQuestions;
+            document.getElementById('avgScore').textContent = avgScore;
+            document.getElementById('strongAreas').textContent = '3';
+            document.getElementById('improvementAreas').textContent = '2';
+            
+            interviewScore = overallScore;
+        }
+
+        function showStep(step) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            document.getElementById(['', 'uploadStep', 'interviewStep', 'summaryStep'][step]).classList.add('active');
+        }
+
+        function showLoading(show) {
+            const loadingArea = document.getElementById('loadingArea');
+            if (show) {
+                loadingArea.classList.add('show');
+            } else {
+                loadingArea.classList.remove('show');
+            }
+        }
+
+        function restartInterview() {
+            currentStep = 1;
+            currentQuestion = 0;
+            questions = [];
+            answers = [];
+            resumeText = '';
+            jobText = '';
+            interviewScore = 0;
+            
+            document.getElementById('resumeFile').value = '';
+            document.getElementById('jobFile').value = '';
+            document.getElementById('jobTextInput').value = '';
+            document.getElementById('resumeInfo').classList.remove('show');
+            document.getElementById('jobInfo').classList.remove('show');
+            document.getElementById('startInterview').disabled = true;
+            
+            showStep(1);
+        }
+
+        function downloadResults() {
+            const results = {
+                score: interviewScore,
+                questions: questions.length,
+                answers: answers,
+                timestamp: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'interview_results.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
